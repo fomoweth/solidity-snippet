@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {Vm} from "forge-std/Vm.sol";
+import {IERC20Permit} from "@openzeppelin/token/ERC20/extensions/IERC20Permit.sol";
 import {IPermit2} from "permit2/interfaces/IPermit2.sol";
+import {Static} from "./Static.sol";
 
 library PermitUtils {
-	enum PermitKind {
-		EIP2621,
-		Allowed
-	}
-
 	struct DomainField {
 		string name;
 		string version;
@@ -18,7 +14,6 @@ library PermitUtils {
 	}
 
 	struct PermitField {
-		PermitKind kind;
 		address owner;
 		address spender;
 		uint256 value;
@@ -26,11 +21,17 @@ library PermitUtils {
 		uint256 deadline;
 	}
 
-	Vm internal constant VM = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
-
 	string internal constant DOMAIN_NOTATION =
 		"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)";
 	bytes32 internal constant DOMAIN_TYPEHASH = keccak256(bytes(DOMAIN_NOTATION));
+
+	string internal constant DOMAIN_SANS_NAME_NOTATION =
+		"EIP712Domain(string version,uint256 chainId,address verifyingContract)";
+	bytes32 internal constant DOMAIN_SANS_NAME_TYPEHASH = keccak256(bytes(DOMAIN_SANS_NAME_NOTATION));
+
+	string internal constant DOMAIN_SANS_VERSION_NOTATION =
+		"EIP712Domain(string name,uint256 chainId,address verifyingContract)";
+	bytes32 internal constant DOMAIN_SANS_VERSION_TYPEHASH = keccak256(bytes(DOMAIN_SANS_VERSION_NOTATION));
 
 	string internal constant DOMAIN_SANS_CHAIN_ID_NOTATION =
 		"EIP712Domain(string name,string version,address verifyingContract)";
@@ -41,19 +42,15 @@ library PermitUtils {
 	bytes32 internal constant DOMAIN_SANS_VERIFYING_CONTRACT_TYPEHASH =
 		keccak256(bytes(DOMAIN_SANS_VERIFYING_CONTRACT_NOTATION));
 
-	string internal constant DOMAIN_SANS_VERSION_NOTATION =
-		"EIP712Domain(string name,uint256 chainId,address verifyingContract)";
-	bytes32 internal constant DOMAIN_SANS_VERSION_TYPEHASH = keccak256(bytes(DOMAIN_SANS_VERSION_NOTATION));
+	string internal constant DOMAIN_SANS_NAME_AND_VERSION_NOTATION =
+		"EIP712Domain(uint256 chainId,address verifyingContract)";
+	bytes32 internal constant DOMAIN_SANS_NAME_AND_VERSION_TYPEHASH =
+		keccak256(bytes(DOMAIN_SANS_NAME_AND_VERSION_NOTATION));
 
 	string internal constant DOMAIN_SANS_CHAIN_ID_AND_VERIFYING_CONTRACT_NOTATION =
 		"EIP712Domain(string name,string version)";
 	bytes32 internal constant DOMAIN_SANS_CHAIN_ID_AND_VERIFYING_CONTRACT_TYPEHASH =
 		keccak256(bytes(DOMAIN_SANS_CHAIN_ID_AND_VERIFYING_CONTRACT_NOTATION));
-
-	string internal constant DOMAIN_SANS_NAME_AND_VERSION_NOTATION =
-		"EIP712Domain(uint256 chainId,address verifyingContract)";
-	bytes32 internal constant DOMAIN_SANS_NAME_AND_VERSION_TYPEHASH =
-		keccak256(bytes(DOMAIN_SANS_NAME_AND_VERSION_NOTATION));
 
 	string internal constant PERMIT_EIP2621_NOTATION =
 		"Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)";
@@ -75,113 +72,119 @@ library PermitUtils {
 		"PermitBatch(PermitDetails[] details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)";
 	bytes32 internal constant PERMIT_BATCH_TYPEHASH = keccak256(bytes(PERMIT_BATCH_NOTATION));
 
+	bytes32 internal constant DAI_DOMAIN_SEPARATOR = 0xdbb8cf42e1ecb028be3f3dbc922e1d878b963f411dc388ced501601c60f7c6f7;
+
 	function signPermit(
 		PermitField memory params,
-		bytes32 separator,
+		address token,
 		uint256 privateKey
-	) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
-		bytes32 structHash = hash(params);
+	) internal view returns (uint8 v, bytes32 r, bytes32 s) {
+		bytes32 separator = IERC20Permit(token).DOMAIN_SEPARATOR();
+		bytes32 structHash = hash(params, separator == DAI_DOMAIN_SEPARATOR);
 		bytes32 messageHash = keccak256(abi.encodePacked("\x19\x01", separator, structHash));
-		(v, r, s) = VM.sign(privateKey, messageHash);
+		(v, r, s) = Static.VM.sign(privateKey, messageHash);
 	}
 
 	function signPermit(
 		IPermit2.PermitSingle memory params,
-		bytes32 separator,
 		uint256 privateKey
-	) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
+	) internal view returns (uint8 v, bytes32 r, bytes32 s) {
+		bytes32 separator = Static.PERMIT2.DOMAIN_SEPARATOR();
 		bytes32 structHash = hash(params);
 		bytes32 messageHash = keccak256(abi.encodePacked("\x19\x01", separator, structHash));
-		(v, r, s) = VM.sign(privateKey, messageHash);
+		(v, r, s) = Static.VM.sign(privateKey, messageHash);
 	}
 
 	function signPermit(
 		IPermit2.PermitBatch memory params,
-		bytes32 separator,
 		uint256 privateKey
-	) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
+	) internal view returns (uint8 v, bytes32 r, bytes32 s) {
+		bytes32 separator = Static.PERMIT2.DOMAIN_SEPARATOR();
 		bytes32 structHash = hash(params);
 		bytes32 messageHash = keccak256(abi.encodePacked("\x19\x01", separator, structHash));
-		(v, r, s) = VM.sign(privateKey, messageHash);
+		(v, r, s) = Static.VM.sign(privateKey, messageHash);
 	}
 
 	function hash(DomainField memory params) internal pure returns (bytes32 digest) {
-		return
-			keccak256(
-				params.chainId == 0 && params.verifyingContract == address(0)
-					? abi.encode(
-						DOMAIN_SANS_CHAIN_ID_AND_VERIFYING_CONTRACT_TYPEHASH,
-						keccak256(bytes(params.name)),
-						keccak256(bytes(params.version))
-					)
-					: params.chainId == 0
-					? abi.encode(
-						DOMAIN_SANS_CHAIN_ID_TYPEHASH,
-						keccak256(bytes(params.name)),
-						keccak256(bytes(params.version)),
-						params.verifyingContract
-					)
-					: params.verifyingContract == address(0)
-					? abi.encode(
-						DOMAIN_SANS_VERIFYING_CONTRACT_TYPEHASH,
-						keccak256(bytes(params.name)),
-						keccak256(bytes(params.version)),
-						params.chainId
-					)
-					: bytes(params.name).length == 0 && bytes(params.version).length == 0
-					? abi.encode(DOMAIN_SANS_NAME_AND_VERSION_TYPEHASH, params.chainId, params.verifyingContract)
-					: bytes(params.version).length == 0
-					? abi.encode(
-						DOMAIN_SANS_VERSION_TYPEHASH,
-						keccak256(bytes(params.name)),
-						params.chainId,
-						params.verifyingContract
-					)
-					: abi.encode(
-						DOMAIN_TYPEHASH,
-						keccak256(bytes(params.name)),
-						keccak256(bytes(params.version)),
-						params.chainId,
-						params.verifyingContract
-					)
-			);
+		digest = keccak256(
+			params.chainId == 0 && params.verifyingContract == address(0)
+				? abi.encode(
+					DOMAIN_SANS_CHAIN_ID_AND_VERIFYING_CONTRACT_TYPEHASH,
+					keccak256(bytes(params.name)),
+					keccak256(bytes(params.version))
+				)
+				: params.chainId == 0
+				? abi.encode(
+					DOMAIN_SANS_CHAIN_ID_TYPEHASH,
+					keccak256(bytes(params.name)),
+					keccak256(bytes(params.version)),
+					params.verifyingContract
+				)
+				: params.verifyingContract == address(0)
+				? abi.encode(
+					DOMAIN_SANS_VERIFYING_CONTRACT_TYPEHASH,
+					keccak256(bytes(params.name)),
+					keccak256(bytes(params.version)),
+					params.chainId
+				)
+				: bytes(params.name).length == 0 && bytes(params.version).length == 0
+				? abi.encode(DOMAIN_SANS_NAME_AND_VERSION_TYPEHASH, params.chainId, params.verifyingContract)
+				: bytes(params.name).length == 0
+				? abi.encode(
+					DOMAIN_SANS_NAME_TYPEHASH,
+					keccak256(bytes(params.version)),
+					params.chainId,
+					params.verifyingContract
+				)
+				: bytes(params.version).length == 0
+				? abi.encode(
+					DOMAIN_SANS_VERSION_TYPEHASH,
+					keccak256(bytes(params.name)),
+					params.chainId,
+					params.verifyingContract
+				)
+				: abi.encode(
+					DOMAIN_TYPEHASH,
+					keccak256(bytes(params.name)),
+					keccak256(bytes(params.version)),
+					params.chainId,
+					params.verifyingContract
+				)
+		);
 	}
 
-	function hash(PermitField memory params) internal pure returns (bytes32 digest) {
-		return
-			keccak256(
-				params.kind == PermitKind.EIP2621
-					? abi.encode(
-						PERMIT_EIP2621_TYPEHASH,
-						params.owner,
-						params.spender,
-						params.value,
-						params.nonce,
-						params.deadline
-					)
-					: abi.encode(
-						PERMIT_ALLOWED_TYPEHASH,
-						params.owner,
-						params.spender,
-						params.nonce,
-						params.deadline,
-						params.value != 0 ? true : false
-					)
-			);
+	function hash(PermitField memory params, bool isAllowed) internal pure returns (bytes32 digest) {
+		digest = keccak256(
+			!isAllowed
+				? abi.encode(
+					PERMIT_EIP2621_TYPEHASH,
+					params.owner,
+					params.spender,
+					params.value,
+					params.nonce,
+					params.deadline
+				)
+				: abi.encode(
+					PERMIT_ALLOWED_TYPEHASH,
+					params.owner,
+					params.spender,
+					params.nonce,
+					params.deadline,
+					params.value != 0 ? true : false
+				)
+		);
 	}
 
 	function hash(IPermit2.PermitSingle memory params) internal pure returns (bytes32 digest) {
-		return
-			keccak256(
-				abi.encode(PERMIT_SINGLE_TYPEHASH, _hashPermitDetails(params.details), params.spender, params.sigDeadline)
-			);
+		digest = keccak256(
+			abi.encode(PERMIT_SINGLE_TYPEHASH, _hashPermitDetails(params.details), params.spender, params.sigDeadline)
+		);
 	}
 
 	function hash(IPermit2.PermitBatch memory params) internal pure returns (bytes32 digest) {
-		return
-			keccak256(
-				abi.encode(PERMIT_BATCH_TYPEHASH, _hashPermitDetails(params.details), params.spender, params.sigDeadline)
-			);
+		digest = keccak256(
+			abi.encode(PERMIT_BATCH_TYPEHASH, _hashPermitDetails(params.details), params.spender, params.sigDeadline)
+		);
 	}
 
 	function _hashPermitDetails(IPermit2.PermitDetails memory params) private pure returns (bytes32 digest) {
