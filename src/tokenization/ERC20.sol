@@ -1,45 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {IERC20} from "src/interfaces/tokenization/IERC20.sol";
+import {IERC20Metadata} from "src/interfaces/tokenization/IERC20Metadata.sol";
+import {IERC20Permit} from "src/interfaces/tokenization/IERC20Permit.sol";
+
 /// @title ERC20
 /// @notice ERC20 implementation with EIP-2612 support and optimized gas usage via Yul
 /// @dev Inspired by OpenZeppelin: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol
 /// @dev Inspired by Solady: https://github.com/Vectorized/solady/blob/main/src/tokens/ERC20.sol
 /// @author fomoweth
-abstract contract ERC20 {
-	/// @notice Thrown when permit deadline has passed
-	error DeadlineExpired();
-
-	/// @notice Thrown when spender doesn't have sufficient allowance
-	error InsufficientAllowance();
-
-	/// @notice Thrown when account doesn't have sufficient balance
-	error InsufficientBalance();
-
-	/// @notice Thrown when approver address is invalid (zero address)
-	error InvalidApprover();
-
-	/// @notice Thrown when receiver address is invalid (zero address)
-	error InvalidReceiver();
-
-	/// @notice Thrown when sender address is invalid (zero address)
-	error InvalidSender();
-
-	/// @notice Thrown when permit signature is invalid or doesn't match owner
-	error InvalidSigner();
-
-	/// @notice Thrown when spender address is invalid (zero address)
-	error InvalidSpender();
-
-	/// @notice Thrown when total supply would overflow uint256
-	error TotalSupplyOverflow();
-
-	/// @notice Emitted when `value` amount tokens is approved by `owner` to be used by `spender`
-	event Approval(address indexed owner, address indexed spender, uint256 value);
-
-	/// @notice Emitted when `value` amount tokens is transferred from `sender` to `receiver`
-	event Transfer(address indexed sender, address indexed receiver, uint256 value);
-
+abstract contract ERC20 is IERC20Metadata, IERC20Permit {
 	/// @notice Precomputed {Approval} event signature for gas optimization
 	/// @dev keccak256(bytes("Approval(address,address,uint256)"))
 	uint256 private constant APPROVAL_EVENT_SIGNATURE = 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925;
@@ -72,41 +43,33 @@ abstract contract ERC20 {
 	/// @dev keccak256(abi.encode(uint256(keccak256("ERC20.storage.totalSupply")) - 1)) & ~bytes32(uint256(0xff))
 	uint256 private constant TOTAL_SUPPLY_SLOT = 0xa4711d1da1eafbe0408d37bf83c2d50cd4f0195bddddf2c70d22f9310191b800;
 
-	/// @notice Returns the name of the token
+	/// @inheritdoc IERC20Metadata
 	/// @dev Must be implemented by inheriting contracts
-	/// @return Token name string
 	function name() public view virtual returns (string memory);
 
-	/// @notice Returns the symbol of the token
+	/// @inheritdoc IERC20Metadata
 	/// @dev Must be implemented by inheriting contracts
-	/// @return Token symbol string
 	function symbol() public view virtual returns (string memory);
 
-	/// @notice Returns the decimals places of the token
+	/// @inheritdoc IERC20Metadata
 	/// @dev Default implementation returns 18, can be overridden
-	/// @return Number of decimals used for token display and calculations
 	function decimals() public view virtual returns (uint8) {
 		return 18;
 	}
 
-	/// @notice Returns the EIP-712 domain separator used in the encoding of the signature for {permit}
-	/// @return separator Current domain separator for this contract and chain
+	/// @inheritdoc IERC20Permit
 	function DOMAIN_SEPARATOR() public view virtual returns (bytes32 separator) {
-		return _buildDomainSeparator();
+		return _computeDomainSeparator();
 	}
 
-	/// @notice Returns the value of tokens in existence
-	/// @return totalSupply_ Current total supply of tokens
+	/// @inheritdoc IERC20
 	function totalSupply() public view virtual returns (uint256 totalSupply_) {
 		assembly ("memory-safe") {
 			totalSupply_ := sload(TOTAL_SUPPLY_SLOT)
 		}
 	}
 
-	/// @notice Returns the remaining number of tokens that `spender` will be allowed to spend on behalf of `owner`
-	/// @param owner Token owner address
-	/// @param spender Address authorized to spend tokens
-	/// @return allowance_ Current allowance amount
+	/// @inheritdoc IERC20
 	function allowance(address owner, address spender) public view virtual returns (uint256 allowance_) {
 		assembly ("memory-safe") {
 			// Compute allowance storage slot using optimized packing:
@@ -119,9 +82,7 @@ abstract contract ERC20 {
 		}
 	}
 
-	/// @notice Returns the value of tokens owned by `account`
-	/// @param account Address to query balance for
-	/// @return balance_ Current balance of the account
+	/// @inheritdoc IERC20
 	function balanceOf(address account) public view virtual returns (uint256 balance_) {
 		assembly ("memory-safe") {
 			// Compute balance storage slot using optimized packing:
@@ -132,9 +93,7 @@ abstract contract ERC20 {
 		}
 	}
 
-	/// @notice Returns the current nonce for `owner`
-	/// @param owner Address to query nonce for
-	/// @return nonce Current nonce value used for permit signatures
+	/// @inheritdoc IERC20Permit
 	function nonces(address owner) public view virtual returns (uint256 nonce) {
 		assembly ("memory-safe") {
 			// Compute nonce storage slot using optimized packing:
@@ -145,31 +104,21 @@ abstract contract ERC20 {
 		}
 	}
 
-	/// @notice Sets a `value` amount of tokens as the allowance of `spender` over the caller's tokens
-	/// @param spender Address to grant allowance to
-	/// @param value Amount of tokens to approve
-	/// @return Always returns true on success (reverts on failure)
+	/// @inheritdoc IERC20
 	function approve(address spender, uint256 value) public virtual returns (bool) {
 		_validateAddress(spender, InvalidSpender.selector);
 		_approve(spender, value);
 		return true;
 	}
 
-	/// @notice Moves a `value` amount of tokens from the caller's account to `receiver`
-	/// @param receiver Address to transfer tokens to
-	/// @param value Amount of tokens to transfer
-	/// @return Always returns true on success (reverts on failure)
+	/// @inheritdoc IERC20
 	function transfer(address receiver, uint256 value) public virtual returns (bool) {
 		_validateAddress(receiver, InvalidReceiver.selector);
 		_update(msg.sender, receiver, value);
 		return true;
 	}
 
-	/// @notice Moves a `value` amount of tokens from `sender` to `receiver`
-	/// @param sender Address to transfer tokens from
-	/// @param receiver Address to transfer tokens to
-	/// @param value Amount of tokens to transfer
-	/// @return Always returns true on success (reverts on failure)
+	/// @inheritdoc IERC20
 	function transferFrom(address sender, address receiver, uint256 value) public virtual returns (bool) {
 		_validateAddress(sender, InvalidSender.selector);
 		_validateAddress(receiver, InvalidReceiver.selector);
@@ -178,14 +127,7 @@ abstract contract ERC20 {
 		return true;
 	}
 
-	/// @notice Sets `value` as the allowance of `spender` over `owner`'s tokens, given `owner`'s signed approval
-	/// @param owner Token owner who signed the permit
-	/// @param spender Address to grant allowance to
-	/// @param value Amount of tokens to approve
-	/// @param deadline Timestamp when the permit expires
-	/// @param v Recovery byte of the signature
-	/// @param r First 32 bytes of the signature
-	/// @param s Second 32 bytes of the signature
+	/// @inheritdoc IERC20Permit
 	function permit(
 		address owner,
 		address spender,
@@ -199,7 +141,7 @@ abstract contract ERC20 {
 		_validateAddress(spender, InvalidSpender.selector);
 
 		// Compute current EIP-712 domain separator
-		bytes32 separator = _buildDomainSeparator();
+		bytes32 separator = _computeDomainSeparator();
 
 		assembly ("memory-safe") {
 			// Revert if deadline has passed
@@ -263,7 +205,6 @@ abstract contract ERC20 {
 	}
 
 	/// @notice Mints a `value` amount of tokens to `account`, increasing the total supply
-	/// @dev Updates total supply and account balance, emits Transfer event from zero address
 	/// @param account Address to mint tokens to
 	/// @param value Amount of tokens to mint
 	function _mint(address account, uint256 value) internal {
@@ -272,7 +213,6 @@ abstract contract ERC20 {
 	}
 
 	/// @notice Burns a `value` amount of tokens from `account`, decreasing the total supply
-	/// @dev Updates total supply and account balance, emits Transfer event to zero address
 	/// @param account Address to burn tokens from
 	/// @param value Amount of tokens to burn
 	function _burn(address account, uint256 value) internal {
@@ -342,7 +282,6 @@ abstract contract ERC20 {
 	}
 
 	/// @notice Sets `value` as the allowance of `spender` over the caller's tokens
-	/// @dev Internal function to update allowance and emit Approval event
 	/// @param spender Address to grant allowance to
 	/// @param value Amount of tokens to approve
 	function _approve(address spender, uint256 value) internal {
@@ -386,14 +325,12 @@ abstract contract ERC20 {
 	}
 
 	/// @notice Returns the hash of the token name for domain separator computation
-	/// @dev Virtual function allowing inheriting contracts to optimize by caching the hash
 	/// @return digest Hash of the token name string
 	function _nameHash() internal view virtual returns (bytes32 digest) {
 		return keccak256(bytes(name()));
 	}
 
 	/// @notice Returns the hash of the version string for domain separator computation
-	/// @dev Virtual function allowing inheriting contracts to override the version
 	/// @return digest Hash of the version string (default: "1")
 	function _versionHash() internal view virtual returns (bytes32 digest) {
 		return keccak256("1");
@@ -401,10 +338,9 @@ abstract contract ERC20 {
 
 	/// @notice Computes the EIP-712 domain separator using the full domain typehash
 	/// @return separator Current domain separator for this contract instance and chain
-	function _buildDomainSeparator() private view returns (bytes32 separator) {
+	function _computeDomainSeparator() private view returns (bytes32 separator) {
 		bytes32 nameHash = _nameHash();
 		bytes32 versionHash = _versionHash();
-
 		assembly ("memory-safe") {
 			let ptr := mload(0x40)
 			mstore(ptr, DOMAIN_TYPEHASH)
