@@ -12,8 +12,8 @@ interface IERC20 {
 	/// @notice Thrown when approver address is invalid (zero address)
 	error InvalidApprover();
 
-	/// @notice Thrown when receiver address is invalid (zero address)
-	error InvalidReceiver();
+	/// @notice Thrown when recipient address is invalid (zero address)
+	error InvalidRecipient();
 
 	/// @notice Thrown when sender address is invalid (zero address)
 	error InvalidSender();
@@ -27,8 +27,8 @@ interface IERC20 {
 	/// @notice Emitted when `value` amount tokens is approved by `owner` to be used by `spender`
 	event Approval(address indexed owner, address indexed spender, uint256 value);
 
-	/// @notice Emitted when `value` amount tokens is transferred from `sender` to `receiver`
-	event Transfer(address indexed sender, address indexed receiver, uint256 value);
+	/// @notice Emitted when `value` amount tokens is transferred from `sender` to `recipient`
+	event Transfer(address indexed sender, address indexed recipient, uint256 value);
 
 	/// @notice Returns the value of tokens in existence
 	/// @return Current total supply of tokens
@@ -51,16 +51,16 @@ interface IERC20 {
 	/// @return A boolean value indicating whether the operation succeeded (reverts on failure)
 	function approve(address spender, uint256 value) external returns (bool);
 
-	/// @notice Moves a `value` amount of tokens from the caller's account to `receiver`
-	/// @param receiver Address to transfer tokens to
+	/// @notice Moves a `value` amount of tokens from the caller's account to `recipient`
+	/// @param recipient Address to transfer tokens to
 	/// @param value Amount of tokens to transfer
 	/// @return A boolean value indicating whether the operation succeeded (reverts on failure)
-	function transfer(address receiver, uint256 value) external returns (bool);
+	function transfer(address recipient, uint256 value) external returns (bool);
 
-	/// @notice Moves a `value` amount of tokens from `sender` to `receiver`
+	/// @notice Moves a `value` amount of tokens from `sender` to `recipient`
 	/// @param sender Address to transfer tokens from
-	/// @param receiver Address to transfer tokens to
+	/// @param recipient Address to transfer tokens to
 	/// @param value Amount of tokens to transfer
 	/// @return A boolean value indicating whether the operation succeeded (reverts on failure)
-	function transferFrom(address sender, address receiver, uint256 value) external returns (bool);
+	function transferFrom(address sender, address recipient, uint256 value) external returns (bool);
 }

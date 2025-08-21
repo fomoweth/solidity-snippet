@@ -27,8 +27,8 @@ remappings = [
 ]
 
 [fuzz]
-runs = 1000
-max_test_rejects = 20000
+runs = 5000
+max_test_rejects = 150000
 
 [rpc_endpoints]
 ethereum = "${RPC_ETHEREUM}"
