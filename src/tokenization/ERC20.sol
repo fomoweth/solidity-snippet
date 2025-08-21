@@ -7,8 +7,8 @@ import {IERC20Permit} from "src/interfaces/tokenization/IERC20Permit.sol";
 
 /// @title ERC20
 /// @notice ERC20 implementation with EIP-2612 support and optimized gas usage via Yul
-/// @dev Inspired by OpenZeppelin: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol
-/// @dev Inspired by Solady: https://github.com/Vectorized/solady/blob/main/src/tokens/ERC20.sol
+/// @dev Inspired by https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol
+/// @dev Inspired by https://github.com/Vectorized/solady/blob/main/src/tokens/ERC20.sol
 /// @author fomoweth
 abstract contract ERC20 is IERC20Metadata, IERC20Permit {
 	/// @notice Precomputed {Approval} event signature for gas optimization
@@ -112,18 +112,18 @@ abstract contract ERC20 is IERC20Metadata, IERC20Permit {
 	}
 
 	/// @inheritdoc IERC20
-	function transfer(address receiver, uint256 value) public virtual returns (bool) {
-		_validateAddress(receiver, InvalidReceiver.selector);
-		_update(msg.sender, receiver, value);
+	function transfer(address recipient, uint256 value) public virtual returns (bool) {
+		_validateAddress(recipient, InvalidRecipient.selector);
+		_update(msg.sender, recipient, value);
 		return true;
 	}
 
 	/// @inheritdoc IERC20
-	function transferFrom(address sender, address receiver, uint256 value) public virtual returns (bool) {
+	function transferFrom(address sender, address recipient, uint256 value) public virtual returns (bool) {
 		_validateAddress(sender, InvalidSender.selector);
-		_validateAddress(receiver, InvalidReceiver.selector);
+		_validateAddress(recipient, InvalidRecipient.selector);
 		_spendAllowance(sender, msg.sender, value);
-		_update(sender, receiver, value);
+		_update(sender, recipient, value);
 		return true;
 	}
 
@@ -208,7 +208,7 @@ abstract contract ERC20 is IERC20Metadata, IERC20Permit {
 	/// @param account Address to mint tokens to
 	/// @param value Amount of tokens to mint
 	function _mint(address account, uint256 value) internal {
-		_validateAddress(account, InvalidReceiver.selector);
+		_validateAddress(account, InvalidRecipient.selector);
 		_update(address(0), account, value);
 	}
 
@@ -220,17 +220,17 @@ abstract contract ERC20 is IERC20Metadata, IERC20Permit {
 		_update(account, address(0), value);
 	}
 
-	/// @notice Transfers a `value` amount of tokens from `sender` to `receiver`,
-	/// or alternatively mints or burns if `sender` or `receiver` is the zero address
+	/// @notice Transfers a `value` amount of tokens from `sender` to `recipient`,
+	/// or alternatively mints or burns if `sender` or `recipient` is the zero address
 	/// @dev Unified function handling transfers, mints, and burns with overflow protection
 	/// @param sender Source address (zero address = mint operation)
-	/// @param receiver Destination address (zero address = burn operation)
+	/// @param recipient Destination address (zero address = burn operation)
 	/// @param value Amount of tokens to transfer/mint/burn
-	function _update(address sender, address receiver, uint256 value) internal virtual {
+	function _update(address sender, address recipient, uint256 value) internal virtual {
 		assembly ("memory-safe") {
 			// Shift addresses left by 96 bits for efficient packing and comparison
 			sender := shl(0x60, sender)
-			receiver := shl(0x60, receiver)
+			recipient := shl(0x60, recipient)
 
 			// Handle sender side (mint if sender is zero address)
 			switch sender
@@ -262,22 +262,22 @@ abstract contract ERC20 is IERC20Metadata, IERC20Permit {
 				sstore(slot, sub(balance_, value))
 			}
 
-			// Handle receiver side (burn if receiver is zero address)
-			switch receiver
+			// Handle recipient side (burn if recipient is zero address)
+			switch recipient
 			case 0x00 {
 				// Burning: decrease total supply
 				sstore(TOTAL_SUPPLY_SLOT, sub(sload(TOTAL_SUPPLY_SLOT), value))
 			}
 			default {
-				// Regular transfer: increase receiver's balance
-				mstore(0x00, or(receiver, BALANCES_SLOT_SEED))
+				// Regular transfer: increase recipient's balance
+				mstore(0x00, or(recipient, BALANCES_SLOT_SEED))
 				let slot := keccak256(0x00, 0x20)
 				sstore(slot, add(sload(slot), value))
 			}
 
 			// Emit {Transfer} event
 			mstore(0x00, value)
-			log3(0x00, 0x20, TRANSFER_EVENT_SIGNATURE, shr(0x60, sender), shr(0x60, receiver))
+			log3(0x00, 0x20, TRANSFER_EVENT_SIGNATURE, shr(0x60, sender), shr(0x60, recipient))
 		}
 	}
 
