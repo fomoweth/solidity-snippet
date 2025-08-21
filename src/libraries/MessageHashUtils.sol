@@ -4,6 +4,7 @@ pragma solidity ^0.8.30;
 /// @title MessageHashUtils
 /// @notice Provides signature message hash utilities for producing digests to be consumed by ECDSA recovery or signing
 /// @dev Modified from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/MessageHashUtils.sol
+/// @author fomoweth
 library MessageHashUtils {
 	/// @notice Returns the keccak256 digest of an ERC-191 signed data with version `0x45` (`personal_sign` messages)
 	function toEthSignedMessageHash(bytes32 messageHash) internal pure returns (bytes32 digest) {

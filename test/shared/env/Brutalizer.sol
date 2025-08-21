@@ -717,6 +717,16 @@ abstract contract Brutalizer {
 		}
 	}
 
+	/// @dev Truncates the bytes to `n` bytes
+	function truncateBytes(bytes memory input, uint256 n) internal pure returns (bytes memory output) {
+		assembly ("memory-safe") {
+			if gt(mload(input), n) {
+				mstore(input, n)
+			}
+			output := input
+		}
+	}
+
 	/// @dev Returns the free memory pointer
 	function freeMemoryPointer() internal pure returns (uint256 result) {
 		assembly ("memory-safe") {
@@ -842,16 +852,6 @@ abstract contract Brutalizer {
 			casted := input
 		}
 		checkMemory(casted);
-	}
-
-	/// @dev Truncates the bytes to `n` bytes
-	function truncateBytes(bytes memory input, uint256 n) internal pure returns (bytes memory output) {
-		assembly ("memory-safe") {
-			if gt(mload(input), n) {
-				mstore(input, n)
-			}
-			output := input
-		}
 	}
 
 	/// @dev Returns if the `target` has code
