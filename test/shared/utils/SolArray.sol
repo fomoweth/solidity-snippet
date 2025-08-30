@@ -1,7 +1,220 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {Currency} from "src/types/Currency.sol";
+
 library SolArray {
+	function currencies(Currency input0) internal pure returns (Currency[] memory output) {
+		output = new Currency[](1);
+		output[0] = input0;
+	}
+
+	function currencies(Currency input0, Currency input1) internal pure returns (Currency[] memory output) {
+		output = new Currency[](2);
+		output[0] = input0;
+		output[1] = input1;
+	}
+
+	function currencies(
+		Currency input0,
+		Currency input1,
+		Currency input2
+	) internal pure returns (Currency[] memory output) {
+		output = new Currency[](3);
+		output[0] = input0;
+		output[1] = input1;
+		output[2] = input2;
+	}
+
+	function currencies(
+		Currency input0,
+		Currency input1,
+		Currency input2,
+		Currency input3
+	) internal pure returns (Currency[] memory output) {
+		output = new Currency[](4);
+		output[0] = input0;
+		output[1] = input1;
+		output[2] = input2;
+		output[3] = input3;
+	}
+
+	function currencies(
+		Currency input0,
+		Currency input1,
+		Currency input2,
+		Currency input3,
+		Currency input4
+	) internal pure returns (Currency[] memory output) {
+		output = new Currency[](5);
+		output[0] = input0;
+		output[1] = input1;
+		output[2] = input2;
+		output[3] = input3;
+		output[4] = input4;
+	}
+
+	function currencies(
+		Currency input0,
+		Currency input1,
+		Currency input2,
+		Currency input3,
+		Currency input4,
+		Currency input5
+	) internal pure returns (Currency[] memory output) {
+		output = new Currency[](6);
+		output[0] = input0;
+		output[1] = input1;
+		output[2] = input2;
+		output[3] = input3;
+		output[4] = input4;
+		output[5] = input5;
+	}
+
+	function currencies(
+		Currency input0,
+		Currency input1,
+		Currency input2,
+		Currency input3,
+		Currency input4,
+		Currency input5,
+		Currency input6
+	) internal pure returns (Currency[] memory output) {
+		output = new Currency[](7);
+		output[0] = input0;
+		output[1] = input1;
+		output[2] = input2;
+		output[3] = input3;
+		output[4] = input4;
+		output[5] = input5;
+		output[6] = input6;
+	}
+
+	function currencies(
+		Currency input0,
+		Currency input1,
+		Currency input2,
+		Currency input3,
+		Currency input4,
+		Currency input5,
+		Currency input6,
+		Currency input7
+	) internal pure returns (Currency[] memory output) {
+		output = new Currency[](8);
+		output[0] = input0;
+		output[1] = input1;
+		output[2] = input2;
+		output[3] = input3;
+		output[4] = input4;
+		output[5] = input5;
+		output[6] = input6;
+		output[7] = input7;
+	}
+
+	function currencies(
+		Currency input0,
+		Currency input1,
+		Currency input2,
+		Currency input3,
+		Currency input4,
+		Currency input5,
+		Currency input6,
+		Currency input7,
+		Currency input8
+	) internal pure returns (Currency[] memory output) {
+		output = new Currency[](9);
+		output[0] = input0;
+		output[1] = input1;
+		output[2] = input2;
+		output[3] = input3;
+		output[4] = input4;
+		output[5] = input5;
+		output[6] = input6;
+		output[7] = input7;
+		output[8] = input8;
+	}
+
+	function currencies(
+		Currency input0,
+		Currency input1,
+		Currency input2,
+		Currency input3,
+		Currency input4,
+		Currency input5,
+		Currency input6,
+		Currency input7,
+		Currency input8,
+		Currency input9
+	) internal pure returns (Currency[] memory output) {
+		output = new Currency[](10);
+		output[0] = input0;
+		output[1] = input1;
+		output[2] = input2;
+		output[3] = input3;
+		output[4] = input4;
+		output[5] = input5;
+		output[6] = input6;
+		output[7] = input7;
+		output[8] = input8;
+		output[9] = input9;
+	}
+
+	function currencies(
+		Currency input0,
+		Currency input1,
+		Currency input2,
+		Currency input3,
+		Currency input4,
+		Currency input5,
+		Currency input6,
+		Currency input7,
+		Currency input8,
+		Currency input9,
+		Currency input10
+	) internal pure returns (Currency[] memory output) {
+		output = new Currency[](11);
+		output[0] = input0;
+		output[1] = input1;
+		output[2] = input2;
+		output[3] = input3;
+		output[4] = input4;
+		output[5] = input5;
+		output[6] = input6;
+		output[7] = input7;
+		output[8] = input8;
+		output[9] = input9;
+		output[10] = input10;
+	}
+
+	function currencies(
+		Currency input0,
+		Currency input1,
+		Currency input2,
+		Currency input3,
+		Currency input4,
+		Currency input5,
+		Currency input6,
+		Currency input7,
+		Currency input8,
+		Currency input9,
+		Currency input10,
+		Currency input11
+	) internal pure returns (Currency[] memory output) {
+		output = new Currency[](12);
+		output[0] = input0;
+		output[1] = input1;
+		output[2] = input2;
+		output[3] = input3;
+		output[4] = input4;
+		output[5] = input5;
+		output[6] = input6;
+		output[7] = input7;
+		output[8] = input8;
+		output[9] = input9;
+		output[10] = input10;
+		output[11] = input11;
+	}
+
 	function addresses(address input0) internal pure returns (address[] memory output) {
 		output = new address[](1);
 		output[0] = input0;

@@ -6,26 +6,22 @@ import {IERC20} from "src/interfaces/tokenization/IERC20.sol";
 import {IERC20Permit} from "src/interfaces/tokenization/IERC20Permit.sol";
 import {MockERC20} from "test/shared/mocks/MockERC20.sol";
 import {PermitUtils} from "test/shared/utils/PermitUtils.sol";
-import {Static} from "test/shared/utils/Static.sol";
 import {BaseTest} from "test/shared/env/BaseTest.sol";
 
 contract ERC20Test is BaseTest {
-	MockERC20 internal token;
+	address internal immutable alice = makeAddr("alice");
+	address internal immutable bob = makeAddr("bob");
 
 	VmSafe.Wallet internal signer;
 	VmSafe.Wallet internal invalidSigner;
 
-	address internal alice;
-	address internal bob;
+	MockERC20 internal token;
 
-	function setUp() public virtual {
-		token = new MockERC20("Mock Token", "MTK", 18);
-
+	function setUp() public {
 		signer = vm.createWallet("signer");
 		invalidSigner = vm.createWallet("invalidSigner");
 
-		alice = makeAddr("alice");
-		bob = makeAddr("bob");
+		token = new MockERC20("Mock Token", "MTK", 18);
 	}
 
 	function test_metadata() public view {
@@ -38,7 +34,7 @@ contract ERC20Test is BaseTest {
 		assertEq(
 			token.DOMAIN_SEPARATOR(),
 			PermitUtils.hash(
-				PermitUtils.DomainField({
+				PermitUtils.Domain({
 					name: "Mock Token",
 					version: "1",
 					chainId: block.chainid,
@@ -237,7 +233,7 @@ contract ERC20Test is BaseTest {
 	}
 
 	function test_permit_revertsWithInvalidSigner() public {
-		PermitUtils.PermitField memory params = PermitUtils.PermitField({
+		PermitUtils.Permit memory params = PermitUtils.Permit({
 			owner: signer.addr,
 			spender: address(0xdeadbeef),
 			value: 100 ether,
@@ -249,7 +245,7 @@ contract ERC20Test is BaseTest {
 	}
 
 	function test_permit_revertsWithDeadlineExpired() public {
-		PermitUtils.PermitField memory params = PermitUtils.PermitField({
+		PermitUtils.Permit memory params = PermitUtils.Permit({
 			owner: signer.addr,
 			spender: address(0xdeadbeef),
 			value: 100 ether,
@@ -261,7 +257,7 @@ contract ERC20Test is BaseTest {
 	}
 
 	function test_permit_revertsWithInvalidApprover() internal {
-		PermitUtils.PermitField memory params = PermitUtils.PermitField({
+		PermitUtils.Permit memory params = PermitUtils.Permit({
 			owner: address(0),
 			spender: address(0xdeadbeef),
 			value: 100 ether,
@@ -273,7 +269,7 @@ contract ERC20Test is BaseTest {
 	}
 
 	function test_permit_revertsWithInvalidSpender() public {
-		PermitUtils.PermitField memory params = PermitUtils.PermitField({
+		PermitUtils.Permit memory params = PermitUtils.Permit({
 			owner: signer.addr,
 			spender: address(0),
 			value: 100 ether,
@@ -285,7 +281,7 @@ contract ERC20Test is BaseTest {
 	}
 
 	function test_permit() public {
-		PermitUtils.PermitField memory params = PermitUtils.PermitField({
+		PermitUtils.Permit memory params = PermitUtils.Permit({
 			owner: signer.addr,
 			spender: address(0xdeadbeef),
 			value: 100 ether,
@@ -302,7 +298,7 @@ contract ERC20Test is BaseTest {
 	function test_fuzz_permit(address spender, uint256 value, uint256 deadline) public {
 		vm.assume(spender != address(0) && signer.addr != spender);
 
-		PermitUtils.PermitField memory params = PermitUtils.PermitField({
+		PermitUtils.Permit memory params = PermitUtils.Permit({
 			owner: signer.addr,
 			spender: spender,
 			value: value,
@@ -310,7 +306,7 @@ contract ERC20Test is BaseTest {
 			deadline: deadline < block.timestamp ? block.timestamp : deadline
 		});
 
-		(uint8 v, bytes32 r, bytes32 s) = PermitUtils.signPermit(params, address(token), signer.privateKey);
+		(uint8 v, bytes32 r, bytes32 s) = PermitUtils.signPermit(params, token.DOMAIN_SEPARATOR(), signer.privateKey);
 
 		vm.expectEmit(true, true, true, true);
 		emit IERC20.Approval(params.owner, params.spender, params.value);
@@ -320,8 +316,8 @@ contract ERC20Test is BaseTest {
 		assertEq(token.nonces(params.owner), params.nonce + 1);
 	}
 
-	function _testPermit(PermitUtils.PermitField memory params, uint256 privateKey) private {
-		(uint8 v, bytes32 r, bytes32 s) = PermitUtils.signPermit(params, address(token), privateKey);
+	function _testPermit(PermitUtils.Permit memory params, uint256 privateKey) private {
+		(uint8 v, bytes32 r, bytes32 s) = PermitUtils.signPermit(params, token.DOMAIN_SEPARATOR(), privateKey);
 
 		if (privateKey != signer.privateKey) {
 			vm.expectRevert(IERC20Permit.InvalidSigner.selector);
