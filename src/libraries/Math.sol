@@ -504,20 +504,6 @@ library Math {
 		}
 	}
 
-	/// @notice Counts the number of leading zero bits in a uint256
-	function clz(uint256 x) internal pure returns (uint256 z) {
-		// prettier-ignore
-		assembly ("memory-safe") {
-			z := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))
-			z := or(z, shl(6, lt(0xffffffffffffffff, shr(z, x))))
-			z := or(z, shl(5, lt(0xffffffff, shr(z, x))))
-			z := or(z, shl(4, lt(0xffff, shr(z, x))))
-			z := or(z, shl(3, lt(0xff, shr(z, x))))
-			z := add(xor(z, byte(and(0x1f, shr(shr(z, x), 0x8421084210842108cc6318c6db6d54be)),
-                0xf8f9f9faf9fdfafbf9fdfcfdfafbfcfef9fafdfafcfcfbfefafafcfbffffffff)), iszero(x))
-		}
-	}
-
 	/// @notice Returns if `x` is an even number
 	function isEven(uint256 x) internal pure returns (bool z) {
 		assembly ("memory-safe") {

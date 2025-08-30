@@ -121,10 +121,6 @@ contract MathTest is Test {
 		assertEq(unsignedRoundsUp(rd) ? Math.sqrtUp(x) : Math.sqrt(x), OzMath.sqrt(x, rd));
 	}
 
-	function test_fuzz_clz(uint256 x) public pure {
-		assertEq(Math.clz(x), OzMath.clz(x));
-	}
-
 	function test_fuzz_isEven(uint256 x) public pure {
 		assertEq(Math.isEven(x), x & 1 == 0);
 	}
