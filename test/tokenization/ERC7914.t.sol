@@ -6,15 +6,13 @@ import {ERC7914} from "src/tokenization/ERC7914.sol";
 import {BaseTest} from "test/shared/env/BaseTest.sol";
 
 contract ERC7914Test is BaseTest {
+	address internal immutable alice = makeAddr("alice");
+	address internal immutable bob = makeAddr("bob");
+
 	ERC7914 internal erc7914;
 
-	address internal alice;
-	address internal bob;
-
-	function setUp() public virtual {
+	function setUp() public {
 		erc7914 = new ERC7914();
-		alice = makeAddr("alice");
-		bob = makeAddr("bob");
 	}
 
 	function test_approveNative_revertsWithIncorrectSender() public {
@@ -164,7 +162,11 @@ contract ERC7914Test is BaseTest {
 		assertEq(bob.balance, initialBalance + 1 ether);
 	}
 
-	function test_fuzz_transferFromNativeTransient(uint256 balance, uint256 approveAmount, uint256 transferAmount) public {
+	function test_fuzz_transferFromNativeTransient(
+		uint256 balance,
+		uint256 approveAmount,
+		uint256 transferAmount
+	) public {
 		vm.deal(address(erc7914), balance);
 		uint256 initialBalance = bob.balance;
 

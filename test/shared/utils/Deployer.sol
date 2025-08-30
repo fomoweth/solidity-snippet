@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {Static} from "./Static.sol";
+import {StdConstants} from "forge-std/StdConstants.sol";
 
 library Deployer {
 	function deploy(bytes memory initCode) internal returns (address instance) {
@@ -43,19 +43,27 @@ library Deployer {
 		}
 	}
 
-	function computeAddress(bytes memory initCode, bytes32 salt, address deployer) internal pure returns (address instance) {
+	function computeAddress(
+		bytes memory initCode,
+		bytes32 salt,
+		address deployer
+	) internal pure returns (address instance) {
 		return computeAddress(keccak256(initCode), salt, deployer);
 	}
 
-	function computeAddress(bytes32 initCodeHash, bytes32 salt, address deployer) internal pure returns (address instance) {
-		return Static.VM.computeCreate2Address(salt, initCodeHash, deployer);
+	function computeAddress(
+		bytes32 initCodeHash,
+		bytes32 salt,
+		address deployer
+	) internal pure returns (address instance) {
+		return StdConstants.VM.computeCreate2Address(salt, initCodeHash, deployer);
 	}
 
 	function computeAddress(address deployer) internal view returns (address instance) {
-		return computeAddress(deployer, Static.VM.getNonce(deployer));
+		return computeAddress(deployer, StdConstants.VM.getNonce(deployer));
 	}
 
 	function computeAddress(address deployer, uint256 nonce) internal pure returns (address instance) {
-		return Static.VM.computeCreateAddress(deployer, nonce);
+		return StdConstants.VM.computeCreateAddress(deployer, nonce);
 	}
 }

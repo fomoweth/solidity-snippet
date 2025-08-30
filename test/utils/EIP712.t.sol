@@ -7,20 +7,20 @@ import {PermitUtils} from "test/shared/utils/PermitUtils.sol";
 import {BaseTest} from "test/shared/env/BaseTest.sol";
 
 contract EIP712Test is BaseTest {
-	using PermitUtils for PermitUtils.DomainField;
+	using PermitUtils for PermitUtils.Domain;
+
+	VmSafe.Wallet internal alice;
+	VmSafe.Wallet internal bob;
 
 	MockEIP712 internal mockStatic;
 	MockEIP712Dynamic internal mockDynamic;
 
-	VmSafe.Wallet internal cooper;
-	VmSafe.Wallet internal murphy;
+	function setUp() public {
+		alice = vm.createWallet("alice");
+		bob = vm.createWallet("bob");
 
-	function setUp() public virtual {
 		mockStatic = new MockEIP712();
 		mockDynamic = new MockEIP712Dynamic("Mock EIP-712 Dynamic", "1");
-
-		cooper = vm.createWallet("cooper");
-		murphy = vm.createWallet("murphy");
 	}
 
 	function test_eip712Domain() public view {
@@ -88,64 +88,64 @@ contract EIP712Test is BaseTest {
 
 	function _testHashTypedData(MockEIP712 mock) internal virtual {
 		bytes32 separator = mock.DOMAIN_SEPARATOR();
-		bytes32 messageHash = _hashMessage("Gravity Equation", cooper.addr, separator, mock.hashTypedData);
-		_checkSigner(murphy, messageHash);
+		bytes32 messageHash = _hashMessage("Wonderland", alice.addr, separator, mock.hashTypedData);
+		_checkSigner(bob, messageHash);
 	}
 
 	function _testHashTypedDataSansChainId(MockEIP712 mock) internal virtual {
-		PermitUtils.DomainField memory domain;
+		PermitUtils.Domain memory domain;
 		(, domain.name, domain.version, , domain.verifyingContract, , ) = mock.eip712Domain();
 
 		bytes32 separator = domain.hash();
-		bytes32 messageHash = _hashMessage("Gravity Equation", cooper.addr, separator, mock.hashTypedDataSansChainId);
-		_checkSigner(murphy, messageHash);
+		bytes32 messageHash = _hashMessage("Wonderland", alice.addr, separator, mock.hashTypedDataSansChainId);
+		_checkSigner(bob, messageHash);
 	}
 
 	function _testHashTypedDataSansVerifyingContract(MockEIP712 mock) internal virtual {
-		PermitUtils.DomainField memory domain;
+		PermitUtils.Domain memory domain;
 		(, domain.name, domain.version, domain.chainId, , , ) = mock.eip712Domain();
 
 		bytes32 separator = domain.hash();
 		bytes32 messageHash = _hashMessage(
-			"Gravity Equation",
-			cooper.addr,
+			"Wonderland",
+			alice.addr,
 			separator,
 			mock.hashTypedDataSansVerifyingContract
 		);
-		_checkSigner(murphy, messageHash);
+		_checkSigner(bob, messageHash);
 	}
 
 	function _testHashTypedDataSansVersion(MockEIP712 mock) internal virtual {
-		PermitUtils.DomainField memory domain;
+		PermitUtils.Domain memory domain;
 		(, domain.name, , domain.chainId, domain.verifyingContract, , ) = mock.eip712Domain();
 
 		bytes32 separator = domain.hash();
-		bytes32 messageHash = _hashMessage("Gravity Equation", cooper.addr, separator, mock.hashTypedDataSansVersion);
-		_checkSigner(murphy, messageHash);
+		bytes32 messageHash = _hashMessage("Wonderland", alice.addr, separator, mock.hashTypedDataSansVersion);
+		_checkSigner(bob, messageHash);
 	}
 
 	function _testHashTypedDataSansChainIdAndVerifyingContract(MockEIP712 mock) internal virtual {
-		PermitUtils.DomainField memory domain;
+		PermitUtils.Domain memory domain;
 		(domain.name, domain.version) = mock.domainNameAndVersion();
 
 		bytes32 separator = domain.hash();
 		bytes32 messageHash = _hashMessage(
-			"Gravity Equation",
-			cooper.addr,
+			"Wonderland",
+			alice.addr,
 			separator,
 			mock.hashTypedDataSansChainIdAndVerifyingContract
 		);
-		_checkSigner(murphy, messageHash);
+		_checkSigner(bob, messageHash);
 	}
 
 	function _testHashTypedDataSansNameAndVersion(MockEIP712 mock) internal virtual {
-		PermitUtils.DomainField memory domain;
+		PermitUtils.Domain memory domain;
 		domain.chainId = block.chainid;
 		domain.verifyingContract = address(mock);
 
 		bytes32 separator = domain.hash();
-		bytes32 messageHash = _hashMessage("Gravity Equation", cooper.addr, separator, mock.hashTypedDataSansNameAndVersion);
-		_checkSigner(murphy, messageHash);
+		bytes32 messageHash = _hashMessage("Wonderland", alice.addr, separator, mock.hashTypedDataSansNameAndVersion);
+		_checkSigner(bob, messageHash);
 	}
 
 	function _hashMessage(
@@ -155,10 +155,17 @@ contract EIP712Test is BaseTest {
 		function(bytes32) external view returns (bytes32) hashTypedData
 	) internal virtual returns (bytes32 messageHash) {
 		bytes32 structHash = keccak256(abi.encode("Message(address recipient,string message)", recipient, message));
-		assertEq(hashTypedData(structHash), messageHash = keccak256(abi.encodePacked("\x19\x01", separator, structHash)));
+		assertEq(
+			hashTypedData(structHash),
+			messageHash = keccak256(abi.encodePacked("\x19\x01", separator, structHash))
+		);
 	}
 
-	function _checkEip712Domain(MockEIP712 mock, string memory expectedName, string memory expectedVersion) internal view {
+	function _checkEip712Domain(
+		MockEIP712 mock,
+		string memory expectedName,
+		string memory expectedVersion
+	) internal view {
 		(
 			bytes1 fields,
 			string memory name,
@@ -179,7 +186,7 @@ contract EIP712Test is BaseTest {
 	}
 
 	function _checkDomainSeparator(MockEIP712 mock) internal view {
-		PermitUtils.DomainField memory domain;
+		PermitUtils.Domain memory domain;
 		(, domain.name, domain.version, domain.chainId, domain.verifyingContract, , ) = mock.eip712Domain();
 		assertEq(mock.DOMAIN_SEPARATOR(), domain.hash());
 	}

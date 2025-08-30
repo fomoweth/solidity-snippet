@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {Vm} from "forge-std/Vm.sol";
 import {IPermit2} from "permit2/interfaces/IPermit2.sol";
 
 library Static {
-	Vm internal constant VM = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
-
 	IPermit2 internal constant PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
 	bytes internal constant PERMIT2_BYTECODE =
